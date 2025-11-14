@@ -77,8 +77,10 @@ const configureAmplify = () => {
   Amplify.configure({
     Auth: {
       Cognito: {
-        userPoolId: "YOUR_USER_POOL_ID",
-        userPoolClientId: "YOUR_WEB_CLIENT_ID",
+        userPoolId: "us-east-1_yngBlcwjn",
+        userPoolClientId: "ekprijqt1l3m09aabb5nbjijk",
+        identityPoolId: "us-east-1:b8739992-37fa-47de-80f2-4e5796abc55a",
+        region: "us-east-1",
         loginWith: { username: false, email: true, phone: false },
         signUpVerificationMethod: "code",
         userAttributes: {
@@ -96,9 +98,14 @@ const configureAmplify = () => {
     },
     Storage: {
       S3: {
-        bucket: "photos",
-        region: "YOUR_BUCKET_REGION",
-        defaultAccessLevel: "private"
+        bucket: "gobard-photo-storage-website",
+        region: "us-east-1",
+        defaultAccessLevel: "private",
+        customPrefix: {
+          private: "Photos/",
+          protected: "Photos/",
+          public: "Photos/"
+        }
       }
     }
   });

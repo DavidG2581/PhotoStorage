@@ -1,0 +1,6 @@
+AWS App notes
+
+created Cognito user Pool
+Created Cognito Identity pool
+Created a role called "Cognito_PhotoLockerPoolAuth_Role"
+Added policy to that role
