@@ -50,9 +50,64 @@ let Amplify;
 let Auth;
 let Storage;
 
+const AMPLIFY_CDN_SOURCES = [
+  "https://unpkg.com/aws-amplify@5.3.7/dist/aws-amplify.min.js",
+  "https://cdn.jsdelivr.net/npm/aws-amplify@5.3.7/dist/aws-amplify.min.js"
+];
+
+let amplifyLoader;
+
+const loadAmplifyFromCdn = () => {
+  if (window.aws_amplify) {
+    return Promise.resolve(window.aws_amplify);
+  }
+
+  if (amplifyLoader) {
+    return amplifyLoader;
+  }
+
+  let sourceIndex = 0;
+  amplifyLoader = new Promise((resolve, reject) => {
+    const tryNextSource = () => {
+      if (window.aws_amplify) {
+        resolve(window.aws_amplify);
+        return;
+      }
+
+      if (sourceIndex >= AMPLIFY_CDN_SOURCES.length) {
+        amplifyLoader = null;
+        reject(new Error("AWS Amplify CDN unavailable. Check your connection and refresh."));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = AMPLIFY_CDN_SOURCES[sourceIndex++];
+      script.crossOrigin = "anonymous";
+      script.referrerPolicy = "no-referrer";
+      script.onload = () => {
+        if (window.aws_amplify) {
+          resolve(window.aws_amplify);
+        } else {
+          script.remove();
+          tryNextSource();
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        tryNextSource();
+      };
+      document.head.appendChild(script);
+    };
+
+    tryNextSource();
+  });
+
+  return amplifyLoader;
+};
+
 const ensureAuthReady = () => {
   if (!Auth) {
-    setStatus("AWS Amplify failed to load. Refresh once the CDN script is available.", true);
+    setStatus("AWS Amplify is still loading. Please wait or check your connection.", true);
     return false;
   }
   return true;
@@ -66,8 +121,7 @@ const ensureStorageReady = () => {
   return true;
 };
 
-const configureAmplify = () => {
-  const amplifyLib = window.aws_amplify;
+const configureAmplify = (amplifyLib) => {
   if (!amplifyLib) {
     console.warn("Amplify CDN script missing. Navigation still works but auth is disabled.");
     setStatus("AWS Amplify not loaded yet. Check your network connection.", true);
@@ -110,8 +164,6 @@ const configureAmplify = () => {
     }
   });
 };
-
-configureAmplify();
 
 const requirePasswordStrength = (value) => {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,24}$/;
@@ -157,6 +209,17 @@ const onSignedIn = async (user) => {
   toggleLibrary(true);
   setStatus(`Welcome back ${user?.attributes?.email || ""}!`);
   await refreshGallery();
+};
+
+const resumeExistingSession = async () => {
+  if (!ensureAuthReady()) return;
+  try {
+    const user = await Auth.currentAuthenticatedUser();
+    await onSignedIn(user);
+  } catch (error) {
+    toggleLibrary(false);
+    console.info("No existing session", error?.message);
+  }
 };
 
 const signInForm = document.getElementById("sign-in-form");
@@ -288,13 +351,17 @@ uploadForm?.addEventListener("submit", async (event) => {
   }
 });
 
-(async () => {
-  if (!ensureAuthReady()) return;
+const bootstrapAmplify = async () => {
   try {
-    const user = await Auth.currentAuthenticatedUser();
-    await onSignedIn(user);
+    setStatus("Loading AWS Amplify CDN...");
+    const amplifyLib = await loadAmplifyFromCdn();
+    configureAmplify(amplifyLib);
+    setStatus("AWS Amplify ready. Sign in to continue.");
+    await resumeExistingSession();
   } catch (error) {
-    toggleLibrary(false);
-    console.info("No existing session", error?.message);
+    console.error("Unable to initialize Amplify", error);
+    setStatus(error?.message || "AWS Amplify failed to load. Check your network connection.", true);
   }
-})();
+};
+
+bootstrapAmplify();
