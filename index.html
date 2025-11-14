@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWS Photo Locker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="dot" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">AWS Photo Locker</p>
+        <strong>Private cloud gallery</strong>
+      </div>
+    </div>
+    <nav class="site-nav" aria-label="Primary">
+      <button class="nav-link active" data-view="home" aria-current="page">Home</button>
+      <button class="nav-link" data-view="about">About</button>
+      <button class="nav-link" data-view="contact">Contact</button>
+    </nav>
+    <button id="sign-out" class="ghost hidden" type="button">Sign out</button>
+  </header>
+
+  <main>
+    <section id="home" class="view active" aria-labelledby="home-title">
+      <div class="panel auth-panel">
+        <h1 id="home-title">Sign in</h1>
+        <p class="muted">Access your personal encrypted locker.</p>
+        <form id="sign-in-form" class="stack" autocomplete="on">
+          <label for="sign-in-email">Email</label>
+          <input type="email" id="sign-in-email" required />
+          <label for="sign-in-password">Password</label>
+          <input type="password" id="sign-in-password" required minlength="6" maxlength="24"
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,24}" />
+          <button type="submit">Sign in</button>
+        </form>
+        <div class="inline-actions">
+          <button type="button" class="text-button" data-modal="forgot">Forgot password?</button>
+          <span class="muted">New here?
+            <button type="button" class="text-button" data-modal="signup">Create account</button>
+          </span>
+        </div>
+        <div id="status" class="status" role="status">Use your AWS Cognito credentials.</div>
+      </div>
+
+      <section id="library" class="panel library hidden" aria-live="polite">
+        <header class="library-header">
+          <div>
+            <p class="eyebrow">Your library</p>
+            <h2>Upload & browse</h2>
+            <p>Only you (and the S3 bucket owner) can access this space.</p>
+          </div>
+          <form id="upload-form" class="upload-form">
+            <label for="photo-input">Upload a photo</label>
+            <input id="photo-input" type="file" accept="image/*" />
+            <button type="submit">Upload</button>
+          </form>
+        </header>
+        <div class="gallery" id="gallery">
+          <div class="thumb">Sign in to load thumbnails.</div>
+        </div>
+      </section>
+    </section>
+
+    <section id="about" class="view" aria-labelledby="about-title">
+      <div class="panel narrow">
+        <h2 id="about-title">About the locker</h2>
+        <p>Each upload lands in <code>s3://photos/&lt;user-sub&gt;/original</code> and Lambda writes the thumbnail to
+          <code>s3://photos/&lt;user-sub&gt;/thumbnails</code>. Only signed-in users can view their own keys.</p>
+        <ul>
+          <li>Cognito User Pools with email-first sign-up and verification</li>
+          <li>No duplicate emails allowed; strong password policy enforced</li>
+          <li>Amplify Storage ensures isolated per-user S3 prefixes</li>
+          <li>Password recovery and email confirmation flows included</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="contact" class="view" aria-labelledby="contact-title">
+      <div class="panel narrow">
+        <h2 id="contact-title">Contact</h2>
+        <p>Need deployment help or support?</p>
+        <ul class="contact-list">
+          <li>Email: <a href="mailto:owner@example.com">owner@example.com</a></li>
+          <li>Docs: <a href="https://docs.example.com" target="_blank" rel="noreferrer">docs.example.com</a></li>
+          <li>Status: <a href="https://status.example.com" target="_blank" rel="noreferrer">status.example.com</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal">
+      <button type="button" class="close-modal" aria-label="Close dialog">&times;</button>
+
+      <div class="modal-view" data-modal-view="signup">
+        <h2>Create an account</h2>
+        <form id="sign-up-form" class="stack">
+          <label for="sign-up-email">Email</label>
+          <input type="email" id="sign-up-email" required />
+          <label for="sign-up-password">Password</label>
+          <input type="password" id="sign-up-password" required minlength="6" maxlength="24"
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,24}" />
+          <button type="submit">Create account</button>
+        </form>
+        <p class="muted">Have a code?
+          <button type="button" class="text-button" data-modal="confirm">Confirm email</button>
+        </p>
+      </div>
+
+      <div class="modal-view hidden" data-modal-view="confirm">
+        <h2>Confirm your email</h2>
+        <form id="confirm-form" class="stack">
+          <label for="confirm-email">Email</label>
+          <input type="email" id="confirm-email" required />
+          <label for="confirm-code">Verification code</label>
+          <input type="text" id="confirm-code" minlength="6" maxlength="6" required />
+          <button type="submit">Verify</button>
+        </form>
+        <button type="button" id="resend-code" class="text-button">Resend code</button>
+      </div>
+
+      <div class="modal-view hidden" data-modal-view="forgot">
+        <h2>Forgot password</h2>
+        <form id="reset-form" class="stack">
+          <label for="reset-email">Email</label>
+          <input type="email" id="reset-email" required />
+          <div class="split">
+            <label for="reset-code">Reset code</label>
+            <button type="button" class="ghost" id="send-reset-code">Email code</button>
+          </div>
+          <input type="text" id="reset-code" minlength="6" maxlength="6" required />
+          <label for="reset-password">New password</label>
+          <input type="password" id="reset-password" required minlength="6" maxlength="24"
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,24}" />
+          <button type="submit">Update password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/aws-amplify@5.3.7/dist/aws-amplify.min.js" integrity="sha384-BW3T2ouesVThzRqWjGD5bguPPLnQvMWepMCqF2luzMdmlsMMDUzRxfquPNT+KTq0" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+</body>
+</html>
